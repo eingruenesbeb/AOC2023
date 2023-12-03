@@ -1,15 +1,45 @@
 fun main() {
     fun part1(input: List<String>): Int {
-        return input.size
+        val charDigits = '0'..'9'
+        return input.fold(0) { current, line ->
+            val toAdd = buildString(2) {
+                val firstDigit =  runCatching {
+                    ValidDigits.fromChar(line.toCharArray().first { it in charDigits })
+                }.getOrNull() ?: 0
+                val lastDigit = runCatching {
+                    ValidDigits.fromChar(line.toCharArray().last { it in charDigits })
+                }.getOrNull() ?: 0
+
+                this.append("$firstDigit$lastDigit")
+            }
+
+            current + toAdd.toInt()
+        }
     }
 
     fun part2(input: List<String>): Int {
-        return input.size
+        val validDigitRepresentations = ValidDigits.allRepresentations()
+        return input.fold(0) { current, line ->
+            val toAdd = buildString(2) {
+                val firstDigit = line.findAnyOf(validDigitRepresentations)?.second?.let {
+                    ValidDigits.fromStringRepresentation(it)
+                } ?: 0
+                val lastDigit = line.findLastAnyOf(validDigitRepresentations)?.second?.let {
+                    ValidDigits.fromStringRepresentation(it)
+                } ?: 0
+
+                this.append("$firstDigit$lastDigit")
+            }
+
+            current + toAdd.toInt()
+        }
     }
 
     // test if implementation meets criteria from the description, like:
-    val testInput = readInput("Day01_test")
-    check(part1(testInput) == 1)
+    val testInput1 = readInput("Day01_part1_test")
+    val testInput2 = readInput("Day01_part2_test")
+    check(part1(testInput1) == 142)
+    check(part2(testInput2) == 281)
 
     val input = readInput("Day01")
     part1(input).println()

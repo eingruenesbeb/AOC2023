@@ -22,6 +22,9 @@ fun String.md5() = BigInteger(1, MessageDigest.getInstance("MD5").digest(toByteA
  */
 fun Any?.println() = println(this)
 
+/**
+ * A class for converting string or chars into digits.
+ */
 enum class ValidDigits {
     ZERO,
     ONE,
