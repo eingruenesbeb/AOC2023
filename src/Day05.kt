@@ -68,17 +68,29 @@ class Mapping<I: IDType, O: IDType>(
          * output: [a-1,a] and [a+3, a+3]
          *
          */
-        val inputRangeWithHoles = mutableListOf<IDRange<O>>()
+        val shiftedHoles = mutableListOf<IDRange<O>>()
+        var unshiftedSlices = mutableListOf(IDRange<O>(inputRange.range))
+        var newUnshiftedSlices = mutableListOf<IDRange<O>>()
 
         for (shiftRange in shiftRanges) {
-            val commonRange = inputRange.range.slice(shiftRange.first).second
-            val shiftedCommonRange = (commonRange.first.toLong() + shiftRange.second).toUInt()..(commonRange.last.toLong() + shiftRange.second).toUInt()
+            unshiftedSlices.forEach { unshiftedSlice ->
+                val slicedInput = unshiftedSlice.range.slice(shiftRange.first)
 
-            inputRangeWithHoles.addAll(inputRange.range.slice(shiftedCommonRange).first.map { IDRange(it) })
-            inputRangeWithHoles.add(IDRange(shiftedCommonRange))
+                if (!slicedInput.second.isEmpty()) {
+                    shiftedHoles.add(IDRange(slicedInput.second.shift(shiftRange.second)))
+                }
+
+                newUnshiftedSlices.addAll(
+                    listOf(slicedInput.first, slicedInput.third)
+                        .filter { !it.isEmpty() }
+                        .map { IDRange(it) }
+                )
+            }
+            unshiftedSlices = newUnshiftedSlices
+            newUnshiftedSlices = mutableListOf()
         }
 
-        return inputRangeWithHoles  // Some ranges may overlap, but that's ok.
+        return shiftedHoles.plus(unshiftedSlices)  // Some ranges may overlap, but that's ok.
     }
 
     fun imageMultiRange(inputRanges: List<IDRange<I>>): List<IDRange<O>> =
@@ -87,34 +99,7 @@ class Mapping<I: IDType, O: IDType>(
         }
 
     fun <R: IDType> compose(other: Mapping<O, R>): Mapping<I, R> {
-        val newShiftRanges = mutableListOf<Pair<UIntRange, Long>>()
-        for (shiftRange in shiftRanges) {
-            // First calculate, the range in the other mapping <O, R>.
-            // There are 3 cases: A number gets shifted in none, either or both mappings.
-            // For the shift ranges of both mappings specifically: in either or in both.
-            val shiftRangeUnderOther = (shiftRange.first.first.toLong() + shiftRange.second).toUInt()..(shiftRange.first.last.toLong() + shiftRange.second).toUInt()
-
-            other.shiftRanges.map { otherRange ->
-                val slicedShiftedInOther = shiftRangeUnderOther.slice(otherRange.first)
-                slicedShiftedInOther.first.forEach {
-                    // Parts of the ranges, only get shifted the first time.
-                    newShiftRanges.add(
-                            (it.first.toLong() - shiftRange.second).toUInt()..(it.last.toLong() - shiftRange.second).toUInt() to shiftRange.second
-                    )
-                }
-                val commonShiftInOriginal = (slicedShiftedInOther.second.first.toLong() - shiftRange.second).toUInt()..(slicedShiftedInOther.second.last.toLong() - shiftRange.second).toUInt()
-                // Parts of the shiftRange, which once shifted also lie in a shift-range of the other mapping, will get
-                // shifted be both amounts combined.
-                newShiftRanges.add(commonShiftInOriginal to shiftRange.second + otherRange.second)
-
-                // Parts of the ranges, that are only shifted under the second mapping:
-                otherRange.first.slice(commonShiftInOriginal).first.forEach {
-                    newShiftRanges.add(it to otherRange.second)
-                }
-            }
-        }
-
-        return Mapping(newShiftRanges)
+        TODO("Find an elegant way to compose functions.")
     }
 }
 
@@ -198,9 +183,7 @@ fun main() {
 
     fun part2(input: List<String>): Int {
         val linesIterator = input.listIterator()
-        val seedRanges: List<IDRange<SeedID>> = extractSeedRanges(linesIterator.next())
-        var locationRanges = listOf<IDRange<LocationID>>()
-        var ultimateMapping: Mapping<*, *> = Mapping<SeedID, SeedID>(listOf())
+        var mappedRanges: List<IDRange<*>> = extractSeedRanges(linesIterator.next()).map { IDRange<SeedID>(it.range) }
 
         var currentBlock = 0
         while (linesIterator.hasNext()) {
@@ -210,6 +193,17 @@ fun main() {
                 continue
             } else {
                 @Suppress("UNCHECKED_CAST")
+                mappedRanges = when (currentBlock) {
+                    1 -> extractMapping<SeedID, SoilID>(linesIterator).imageMultiRange(mappedRanges as List<IDRange<SeedID>>)
+                    2 -> extractMapping<SoilID, FertilizerID>(linesIterator).imageMultiRange(mappedRanges as List<IDRange<SoilID>>)
+                    3 -> extractMapping<FertilizerID, WaterID>(linesIterator).imageMultiRange(mappedRanges as List<IDRange<FertilizerID>>)
+                    4 -> extractMapping<WaterID, LightID>(linesIterator).imageMultiRange(mappedRanges as List<IDRange<WaterID>>)
+                    5 -> extractMapping<LightID, TemperatureID>(linesIterator).imageMultiRange(mappedRanges as List<IDRange<LightID>>)
+                    6 -> extractMapping<TemperatureID, HumidityID>(linesIterator).imageMultiRange(mappedRanges as List<IDRange<TemperatureID>>)
+                    7 -> extractMapping<HumidityID, LocationID>(linesIterator).imageMultiRange(mappedRanges as List<IDRange<HumidityID>>)
+                    else -> break
+                }
+                /*
                 when (currentBlock) {
                     1 -> ultimateMapping = extractMapping<SeedID, SoilID>(linesIterator)
                     2 -> ultimateMapping = (ultimateMapping as Mapping<SeedID, SoilID>).compose<FertilizerID>(extractMapping(linesIterator))
@@ -224,12 +218,11 @@ fun main() {
                     }
                     else -> break
                 }
+                 */
             }
         }
 
-        return locationRanges.fold(Int.MAX_VALUE) { acc, idRange ->
-            (idRange.range.first.toLong().takeIf { it < acc } ?: acc).toInt()
-        }
+        return mappedRanges.fold(Int.MAX_VALUE) { acc, idRange -> (idRange.range.first.toLong().takeIf { it < acc } ?: acc).toInt() }
     }
 
     // test if implementation meets criteria from the description, like:
