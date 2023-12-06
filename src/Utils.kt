@@ -2,8 +2,10 @@
 
 import java.math.BigInteger
 import java.security.MessageDigest
+import java.util.SortedSet
 import kotlin.io.path.Path
 import kotlin.io.path.readLines
+import kotlin.math.min
 
 /**
  * Reads lines from the given input txt file.
@@ -76,5 +78,24 @@ enum class ValidDigits {
                 this.addAll(it.stringRepresentations())
             }
         }
+    }
+}
+
+fun SortedSet<Int>.toIntRange(): IntRange = this.first()..this.last()
+
+/**
+ * Slices this range into multiple.
+ *
+ * @param other The UIntRange to cut out of the current one.
+ * @return A Pair<List<UIntRange>, UIntRange> where the first element is a list
+ *         of slices outside the other range and the second element is the part inside.
+ */
+fun UIntRange.slice(other: UIntRange): Pair<List<UIntRange>, UIntRange> {
+    val slices = listOf(this.first..<other.first, (other.last + 1u)..this.last)
+    return when {
+        slices[0].isEmpty() && slices[1].isEmpty() -> listOf<UIntRange>() to this  // No overhang
+        !slices[0].isEmpty() && slices[1].isEmpty() -> listOf(slices[0]) to other.first..this.last  // Only left overhang
+        slices[0].isEmpty() && !slices[1].isEmpty() -> listOf(slices[1]) to this.first..other.last  // Only right overhang
+        else -> slices to other  // Overhang on both sides
     }
 }
