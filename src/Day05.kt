@@ -15,9 +15,9 @@ data object HumidityID : IDType
 data object LocationID : IDType
 
 
-data class IDSet<@Suppress("unused") T: IDType>(val set: SortedSet<UInt>)
+data class IDSet<@Suppress("unused") T: IDType>(val set: SortedSet<Long>)
 
-data class IDRange<@Suppress("unused") T: IDType>(val range: UIntRange)
+data class IDRange<@Suppress("unused") T: IDType>(val range: LongRange)
 
 /**
  * A mapping of sets of an [IDType] [I] to a corresponding set of another [IDType] [O].
@@ -35,7 +35,7 @@ data class IDRange<@Suppress("unused") T: IDType>(val range: UIntRange)
  * @see imageSet
  */
 class Mapping<I: IDType, O: IDType>(
-    private val shiftRanges: List<Pair<UIntRange, Long>>
+    private val shiftRanges: List<Pair<LongRange, Long>>
 ) {
     /**
      * Generates the image [IDSet] of type [O] for an input [IDSet] of type [I].
@@ -53,7 +53,7 @@ class Mapping<I: IDType, O: IDType>(
         val identityMapped = inputIDSet.set.filter { id -> shiftRanges.all { id !in it.first } }.toSet()
         val shiftedIDs = (inputIDSet.set - identityMapped).map {  shiftedID ->
             val toShiftBy = shiftRanges.first { shiftedID in it.first }.second
-            (shiftedID.toLong() + toShiftBy).toUInt()
+            (shiftedID.toLong() + toShiftBy)
         }
 
         return IDSet(identityMapped.union(shiftedIDs).toSortedSet())
@@ -97,15 +97,11 @@ class Mapping<I: IDType, O: IDType>(
         inputRanges.fold(listOf()) { acc, idRange ->
             acc.plus(imageRange(idRange))
         }
-
-    fun <R: IDType> compose(other: Mapping<O, R>): Mapping<I, R> {
-        TODO("Find an elegant way to compose functions.")
-    }
 }
 
 fun extractSeedSet(seedLine: String): IDSet<SeedID> {
     val seedIDs = seedLine.split(": ").last().split(' ').map {
-        it.toUInt()
+        it.toLong()
     }.toSortedSet()
 
     return IDSet(seedIDs)
@@ -113,8 +109,8 @@ fun extractSeedSet(seedLine: String): IDSet<SeedID> {
 
 fun extractSeedRanges(seedLine: String): List<IDRange<SeedID>> =
     seedLine.split(": ").last().split(' ').chunked(2).fold(listOf()) { acc, numPair ->
-        val rangeStart = numPair[0].toUInt()
-        val rangeSize = numPair[1].toUInt()
+        val rangeStart = numPair[0].toLong()
+        val rangeSize = numPair[1].toLong()
 
         acc.plusElement(IDRange(rangeStart..<(rangeStart + rangeSize)))
     }
@@ -138,9 +134,9 @@ fun <I: IDType, O: IDType> extractMapping(lineIterator: ListIterator<String>): M
                 break
             }
             // Numbers are ordered: [destination range start] [source range start] [range size]
-            val numbers = currentLine.split(" ").map { it.toUInt() }  // size=3
+            val numbers = currentLine.split(" ").map { it.toLong() }  // size=3
             val range = numbers[1]..<(numbers[1] + numbers[2])
-            val translation = numbers[0].toLong() - numbers[1].toLong()
+            val translation = numbers[0] - numbers[1]
 
             this.add(range to translation)
         }
@@ -152,7 +148,7 @@ fun <I: IDType, O: IDType> extractMapping(lineIterator: ListIterator<String>): M
 fun main() {
     val testInput = readInput("Day05_test")
 
-    fun part1(input: List<String>): UInt? {
+    fun part1(input: List<String>): Long {
         val linesIterator = input.listIterator()
         var mappedSet: IDSet<*> = IDSet<SeedID>(sortedSetOf())
 
@@ -181,7 +177,7 @@ fun main() {
         return mappedSet.set.min()
     }
 
-    fun part2(input: List<String>): Int {
+    fun part2(input: List<String>): Long {
         val linesIterator = input.listIterator()
         var mappedRanges: List<IDRange<*>> = extractSeedRanges(linesIterator.next()).map { IDRange<SeedID>(it.range) }
 
@@ -203,33 +199,17 @@ fun main() {
                     7 -> extractMapping<HumidityID, LocationID>(linesIterator).imageMultiRange(mappedRanges as List<IDRange<HumidityID>>)
                     else -> break
                 }
-                /*
-                when (currentBlock) {
-                    1 -> ultimateMapping = extractMapping<SeedID, SoilID>(linesIterator)
-                    2 -> ultimateMapping = (ultimateMapping as Mapping<SeedID, SoilID>).compose<FertilizerID>(extractMapping(linesIterator))
-                    3 -> ultimateMapping = (ultimateMapping as Mapping<SeedID, FertilizerID>).compose<WaterID>(extractMapping(linesIterator))
-                    4 -> ultimateMapping = (ultimateMapping as Mapping<SeedID, WaterID>).compose<LightID>(extractMapping(linesIterator))
-                    5 -> ultimateMapping = (ultimateMapping as Mapping<SeedID, LightID>).compose<TemperatureID>(extractMapping(linesIterator))
-                    6 -> ultimateMapping = (ultimateMapping as Mapping<SeedID, TemperatureID>).compose<HumidityID>(extractMapping(linesIterator))
-                    7 -> {
-                        ultimateMapping = (ultimateMapping as Mapping<SeedID, HumidityID>).compose<LocationID>(extractMapping(linesIterator))
-                        @Suppress("USELESS_CAST")
-                        locationRanges = (ultimateMapping as Mapping<SeedID, LocationID>).imageMultiRange(seedRanges)
-                    }
-                    else -> break
-                }
-                 */
             }
         }
 
-        return mappedRanges.fold(Int.MAX_VALUE) { acc, idRange -> (idRange.range.first.toLong().takeIf { it < acc } ?: acc).toInt() }
+        return mappedRanges.fold(Long.MAX_VALUE) { acc, idRange -> (idRange.range.first.takeIf { it < acc } ?: acc) }
     }
 
     // test if implementation meets criteria from the description, like:
-    check(part1(testInput)?.toInt() == 35)
-    check(part2(testInput) == 46)
+    check(part1(testInput) == 35L)
+    check(part2(testInput) == 46L)
 
     val input = readInput("Day05")
-    part1(input).println()
-    part2(input).println()
+    part1(input).println()  // 389056265
+    part2(input).println()  // 137516820
 }

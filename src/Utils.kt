@@ -2,7 +2,6 @@
 
 import java.math.BigInteger
 import java.security.MessageDigest
-import java.util.SortedSet
 import kotlin.io.path.Path
 import kotlin.io.path.readLines
 
@@ -80,8 +79,6 @@ enum class ValidDigits {
     }
 }
 
-fun SortedSet<Int>.toIntRange(): IntRange = this.first()..this.last()
-
 /**
  * Slices the current [UIntRange] based on the provided [other] range, dividing it into three parts:
  * 1. The portion of the current range entirely smaller than the other.
@@ -99,24 +96,24 @@ fun SortedSet<Int>.toIntRange(): IntRange = this.first()..this.last()
  * @param other The [UIntRange] to slice the current range with.
  * @return A [Triple] representing the sliced portions as described above.
  */
-fun UIntRange.slice(other: UIntRange): Triple<UIntRange, UIntRange, UIntRange> {
+fun LongRange.slice(other: LongRange): Triple<LongRange, LongRange, LongRange> {
     return when {
-        this.last < other.first -> Triple(this, UIntRange.EMPTY, UIntRange.EMPTY)  // Entirely smaller than the other
+        this.last < other.first -> Triple(this, LongRange.EMPTY, LongRange.EMPTY)  // Entirely smaller than the other
         this.first < other.first && other.first <= this.last && this.last <= other.last -> {
             // Intersection with left overhang
-            Triple(this.first..<other.first, other.first..this.last, UIntRange.EMPTY)
+            Triple(this.first..<other.first, other.first..this.last, LongRange.EMPTY)
         }
         this.first < other.first && other.last < this.last -> {
             // Intersection with left and right overhang
-            Triple(this.first..<other.first, other, (other.last + 1u)..this.last)
+            Triple(this.first..<other.first, other, (other.last + 1)..this.last)
         }
-        other.first <= this.first && this.last <= other.last -> Triple(UIntRange.EMPTY, this, UIntRange.EMPTY)  // Other range covers this entirely
+        other.first <= this.first && this.last <= other.last -> Triple(LongRange.EMPTY, this, LongRange.EMPTY)  // Other range covers this entirely
         other.first < this.first && this.first <= other.last && other.last < this.last -> {
             // Intersection with right overhang
-            Triple(UIntRange.EMPTY, this.first..other.last, (other.last + 1u)..this.last)
+            Triple(LongRange.EMPTY, this.first..other.last, (other.last + 1)..this.last)
         }
-        /*other.last < this.first*/ else -> Triple(UIntRange.EMPTY, UIntRange.EMPTY, this)  // Entirely bigger than the other
+        /*other.last < this.first*/ else -> Triple(LongRange.EMPTY, LongRange.EMPTY, this)  // Entirely bigger than the other
     }
 }
 
-fun UIntRange.shift(shiftBy: Long) = (this.first.toLong() + shiftBy).toUInt()..(this.last.toLong() + shiftBy).toUInt()
+fun LongRange.shift(shiftBy: Long) = (this.first + shiftBy)..(this.last + shiftBy)
