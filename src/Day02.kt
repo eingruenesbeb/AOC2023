@@ -1,5 +1,7 @@
+import kotlin.time.DurationUnit
+
 /**
- * Represents a color, that a cube could be.
+ * Represents a color that a cube could be.
  */
 enum class Color {
     RED,
@@ -56,7 +58,7 @@ data class Game(
 ) {
     companion object {
         /**
-         *  Constructs a game based input, Strings will (given the limited selection of possible inputs) always have the
+         *  Constructs a game-based input, Strings will (given the limited selection of possible inputs) always have the
          *  following pattern:
          * `Game \[ID]: \[set1]; \[set3]; [...]`
          */
@@ -81,14 +83,14 @@ data class Game(
     }
 
     /**
-     * Calculates the "power" of the game. It is defined as the amount of required color cubes multiplied together.
+     * Calculates the "power" of the game. It is defined as the number of required color cubes multiplied together.
      *
      * @return [redRequired] * [greenRequired] * [blueRequired]
      */
     fun power() = redRequired * greenRequired * blueRequired
 
     /**
-     * A game is considered possible, if the amount of required cubes is less or equal to the given amounts per colour.
+     * A game is considered possible if the number of required cubes is less or equal to the given amounts per color.
      *
      * @param maxRedAllowed The maximum amount of allowed red cubes.
      * @param maxGreenAllowed The maximum amount of allowed green cubes.
@@ -132,6 +134,6 @@ fun main() {
     val input = readInput("Day02")
     val games = extractGamesFromInput(input)
 
-    part1(games).println()
-    part2(games).println()
+    timeAndPrint("Part 1", DurationUnit.MICROSECONDS) { part1(games).println() }
+    timeAndPrint("Part 2", DurationUnit.MICROSECONDS) { part2(games).println() }
 }

@@ -1,3 +1,5 @@
+import kotlin.time.DurationUnit
+
 fun main() {
     fun part1(input: List<String>): Int {
         val charDigits = '0'..'9'
@@ -42,6 +44,8 @@ fun main() {
     check(part2(testInput2) == 281)
 
     val input = readInput("Day01")
-    part1(input).println()
-    part2(input).println()
+    timeAndPrint("Part 1") { part1(input).println() }
+    timeAndPrint("Part 2") { part2(input).println() }
+
+    timeTrials("Part 1", DurationUnit.MICROSECONDS, DurationUnit.MILLISECONDS) { part1(input) }
 }

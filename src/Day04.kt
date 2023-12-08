@@ -52,7 +52,7 @@ fun main() {
             // now.
             finalAmount += scratchCardsWithAmounts[cardIndex].second
 
-            // Update the amounts of the following cards.
+            // Update the numbers of the following cards.
             cardsToCopyIndices.forEach {
                 scratchCardsWithAmounts[it] =
                     scratchCardsWithAmounts[it].first to scratchCardsWithAmounts[it].second + newCopiesAmount
@@ -69,6 +69,6 @@ fun main() {
 
 
     val input = readInput("Day04")
-    part1(input).println()  // 15268
-    part2(input).println()  // 6283755
+    timeAndPrint("Part 1") { part1(input).println() }  // 15268
+    timeAndPrint("Part 2") { part2(input).println() }  // 6283755
 }

@@ -1,4 +1,4 @@
-import java.util.SortedSet
+import java.util.*
 
 /**
  * Indicates an id-type.
@@ -22,7 +22,7 @@ data class IDRange<@Suppress("unused") T: IDType>(val range: LongRange)
 /**
  * A mapping of sets of an [IDType] [I] to a corresponding set of another [IDType] [O].
  *
- * Mappings can also be concatenated, if the input type is the same as the output type.
+ * Mappings can also be concatenated if the input type is the same as the output type.
  *
  * A mapping doesn't need to be an injection, but is always a surjection.
  *
@@ -42,7 +42,7 @@ class Mapping<I: IDType, O: IDType>(
      *
      * The image has a cardinality lower or equal to its primal.
      *
-     * Elements from the input-set, that are in the special ranges, will be shifted by a given amount.
+     * A given amount will shift elements from the input-set that are in the special ranges.
      * Any other element in the input-set will get mapped using its identity.
      *
      * **THE INPUT SET SHOULDN'T BE TOO BIG!**
@@ -63,9 +63,9 @@ class Mapping<I: IDType, O: IDType>(
         /*
          * Each `shiftRange` will "punch a hole" into the inputRange. Like this:
          *
-         * input:  [a, a+3]
-         * shift range: [a+1, a+2] → [a-1, a]
-         * output: [a-1,a] and [a+3, a+3]
+         * Input: `[a, a+3]`
+         * shift range: `[a+1, a+2] → [a-1, a]`
+         * output: `[a-1,a] and [a+3, a+3]`
          *
          */
         val shiftedHoles = mutableListOf<IDRange<O>>()
@@ -210,6 +210,6 @@ fun main() {
     check(part2(testInput) == 46L)
 
     val input = readInput("Day05")
-    part1(input).println()  // 389056265
-    part2(input).println()  // 137516820
+    timeAndPrint("Part 1") { part1(input).println() }  // 389056265
+    timeAndPrint("Part 2") { part2(input).println() }  // 137516820
 }

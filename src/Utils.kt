@@ -81,9 +81,9 @@ enum class ValidDigits {
 
 /**
  * Slices the current [UIntRange] based on the provided [other] range, dividing it into three parts:
- * 1. The portion of the current range entirely smaller than the other.
+ * 1. The portion of the current range that is entirely smaller than the other.
  * 2. The intersection with the other range.
- * 3. The portion of the current range entirely bigger than the other.
+ * 3. The portion of the current range that is entirely bigger than the other.
  *
  * Example:
  * ```
@@ -107,7 +107,7 @@ fun LongRange.slice(other: LongRange): Triple<LongRange, LongRange, LongRange> {
             // Intersection with left and right overhang
             Triple(this.first..<other.first, other, (other.last + 1)..this.last)
         }
-        other.first <= this.first && this.last <= other.last -> Triple(LongRange.EMPTY, this, LongRange.EMPTY)  // Other range covers this entirely
+        other.first <= this.first && this.last <= other.last -> Triple(LongRange.EMPTY, this, LongRange.EMPTY)  // The other range covers this entirely
         other.first < this.first && this.first <= other.last && other.last < this.last -> {
             // Intersection with right overhang
             Triple(LongRange.EMPTY, this.first..other.last, (other.last + 1)..this.last)

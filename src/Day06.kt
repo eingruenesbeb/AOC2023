@@ -1,4 +1,5 @@
 import kotlin.math.*
+import kotlin.time.DurationUnit
 
 // Technically not acceleration, but it's the rate at which the release-speed increases per millisecond, so I'll call it
 // that.
@@ -96,6 +97,14 @@ fun main() {
     check(part2(testInput) == 71503L)
 
     // Real input:
-    part1(input).println()
-    part2(input).println()
+    timeAndPrint("Part 1", DurationUnit.MICROSECONDS) { part1(input).println() }
+    timeAndPrint("Part 2", DurationUnit.MICROSECONDS) { part2(input).println() }
+
+    timeTrials("Part 1", DurationUnit.MICROSECONDS, DurationUnit.MILLISECONDS, 10000) {
+        part1(input)
+    }
+
+    timeTrials("Part 2", DurationUnit.MICROSECONDS, DurationUnit.MILLISECONDS, 10000) {
+        part1(input)
+    }
 }
