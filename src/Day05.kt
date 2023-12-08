@@ -1,4 +1,5 @@
 import java.util.*
+import kotlin.time.DurationUnit
 
 /**
  * Indicates an id-type.
@@ -210,6 +211,15 @@ fun main() {
     check(part2(testInput) == 46L)
 
     val input = readInput("Day05")
-    timeAndPrint("Part 1") { part1(input).println() }  // 389056265
-    timeAndPrint("Part 2") { part2(input).println() }  // 137516820
+    part1(input).println()  // 389056265
+    part2(input).println()  // 137516820
+
+    // Timings
+    timeTrials("Part 1", unitTotal = DurationUnit.MILLISECONDS) {
+        part1(input)
+    }
+
+    timeTrials("Part 2") {
+        part2(input)
+    }
 }

@@ -1,25 +1,24 @@
+import kotlin.time.Duration.Companion.nanoseconds
 import kotlin.time.DurationUnit
 import kotlin.time.measureTime
 
-fun <T> timeAndPrint(label: String = "", unit: DurationUnit = DurationUnit.MILLISECONDS, block: () -> T) {
-    val measured = measureTime { block.invoke() }
-
-    when (unit) {
-        DurationUnit.NANOSECONDS -> println("\"$label\" took ${measured.inWholeNanoseconds}ns to execute.")
-        DurationUnit.MICROSECONDS -> println("\"$label\" took ${measured.inWholeMicroseconds}µs to execute.")
-        DurationUnit.MILLISECONDS -> println("\"$label\" took ${measured.inWholeMilliseconds}ms to execute.")
-        DurationUnit.SECONDS -> println("\"$label\" took ${measured.inWholeSeconds}s to execute.")
-        DurationUnit.MINUTES -> println("\"$label\" took ${measured.inWholeMinutes}m to execute.")
-        DurationUnit.HOURS -> println("\"$label\" took ${measured.inWholeHours}h to execute.")
-        DurationUnit.DAYS -> println("\"$label\" took ${measured.inWholeDays}d to execute.")
-    }
-}
-
+/**
+ * Executes the provided code block multiple times, measures the execution time for each repetition,
+ * and prints various timing statistics, including the minimum,
+ * maximum, mean, median, standard deviation, and total time.
+ *
+ * @param label A string used for labeling the benchmarking output. Default: `""`
+ * @param unit The time unit in which individual timings (minimum, maximum, mean, median) will be displayed.
+ * Default: [DurationUnit.MICROSECONDS]
+ * @param unitTotal The time unit in which the total time will be displayed. Default: [DurationUnit.SECONDS]
+ * @param repetitions The number of times the provided code block will be executed for benchmarking. Default: 10000
+ * @param block The code block or function that is being benchmarked.
+ */
 fun <T> timeTrials(
     label: String = "",
-    unit: DurationUnit = DurationUnit.MILLISECONDS,
+    unit: DurationUnit = DurationUnit.MICROSECONDS,
     unitTotal: DurationUnit = DurationUnit.SECONDS,
-    repetitions: Int = 1000,
+    repetitions: Int = 10000,
     block: () -> T
 ) {
     "Gathering timings for $label with $repetitions repetitions...".println()
@@ -34,10 +33,22 @@ fun <T> timeTrials(
     val mean = total.div(timings.size)
     val median = timings.subList(0, (timings.size - 1) / 2).last()
 
+    val variance = timings.map { it.inWholeNanoseconds.toDouble() }
+        .let { durations ->
+            val average = durations.average()
+            durations.map { (it - average) * (it - average) }.average()
+        }
+
+    val standardDeviation = kotlin.math.sqrt(variance).toLong().nanoseconds
+
+
     "Timings for $label:".println()
 
-    listOf(min, max, mean, median, total).forEachIndexed { index, duration ->
-        val convertTo = if (index == 4) unitTotal else unit
+    listOf(min, max, mean, median, standardDeviation, total).forEachIndexed { index, duration ->
+        val convertTo = when (index) {
+            5 -> unitTotal
+            else -> unit
+        }
 
         val stringifiedDuration = when (convertTo) {
             DurationUnit.NANOSECONDS -> "${duration.inWholeNanoseconds}ns"
@@ -54,7 +65,8 @@ fun <T> timeTrials(
             1 -> "Maximum: $stringifiedDuration".println()
             2 -> "Mean: $stringifiedDuration".println()
             3 -> "Median: $stringifiedDuration".println()
-            4 -> "Total: $stringifiedDuration".println()
+            4 -> "Standard deviation: $stringifiedDuration".println()
+            5 -> "Total: $stringifiedDuration".println()
             else -> "Wibbly wobbly timey whimey stuff...".println()
         }
     }

@@ -1,5 +1,3 @@
-import kotlin.time.DurationUnit
-
 enum class Card(val initial: Char) {
     JOKER('★'),
     TWO('2'),
@@ -132,11 +130,11 @@ fun main() {
     part2(input).println()
 
     // Timings
-    timeTrials("Part 1", repetitions = 10000) {
+    timeTrials("Part 1") {
         part1(input)
     }
 
-    timeTrials("Part 2", repetitions = 10000) {
-        part1(input)
+    timeTrials("Part 2") {
+        part2(input)
     }
 }

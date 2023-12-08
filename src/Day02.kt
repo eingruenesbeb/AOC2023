@@ -134,6 +134,15 @@ fun main() {
     val input = readInput("Day02")
     val games = extractGamesFromInput(input)
 
-    timeAndPrint("Part 1", DurationUnit.MICROSECONDS) { part1(games).println() }
-    timeAndPrint("Part 2", DurationUnit.MICROSECONDS) { part2(games).println() }
+    part1(games).println()
+    part2(games).println()
+
+    // Timings
+    timeTrials("Part 1", DurationUnit.NANOSECONDS, DurationUnit.MILLISECONDS) {
+        part1(games)
+    }
+
+    timeTrials("Part 2", DurationUnit.NANOSECONDS, DurationUnit.MILLISECONDS) {
+        part2(games)
+    }
 }

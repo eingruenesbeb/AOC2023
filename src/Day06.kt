@@ -97,14 +97,15 @@ fun main() {
     check(part2(testInput) == 71503L)
 
     // Real input:
-    timeAndPrint("Part 1", DurationUnit.MICROSECONDS) { part1(input).println() }
-    timeAndPrint("Part 2", DurationUnit.MICROSECONDS) { part2(input).println() }
+    part1(input).println()
+    part2(input).println()
 
-    timeTrials("Part 1", DurationUnit.MICROSECONDS, DurationUnit.MILLISECONDS, 10000) {
+    // Timings
+    timeTrials("Part 1", unitTotal = DurationUnit.MILLISECONDS) {
         part1(input)
     }
 
-    timeTrials("Part 2", DurationUnit.MICROSECONDS, DurationUnit.MILLISECONDS, 10000) {
-        part1(input)
+    timeTrials("Part 2", unitTotal = DurationUnit.MILLISECONDS) {
+        part2(input)
     }
 }

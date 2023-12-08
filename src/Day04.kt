@@ -69,6 +69,15 @@ fun main() {
 
 
     val input = readInput("Day04")
-    timeAndPrint("Part 1") { part1(input).println() }  // 15268
-    timeAndPrint("Part 2") { part2(input).println() }  // 6283755
+    part1(input).println()  // 15268
+    part2(input).println()  // 6283755
+
+    // Timings
+    timeTrials("Part 1") {
+        part1(input)
+    }
+
+    timeTrials("Part 2") {
+        part2(input)
+    }
 }
