@@ -23,6 +23,34 @@ class NodeUnreachableException(
 ) : DesertMapException("The destination node \"$destinationNodeID\" cannot be reached from node \"$startNodeID\"")
 class RestlessSpiritException : DesertMapException("At least one node cannot be reached under the conditions imposed on the ghost.")
 
+fun gcdExtended(a: Int, b: Int): Triple<Int, Int, Int> {
+    var secondLastR = a
+    var secondLastS = 1
+    var secondLastT = 0
+
+    var lastR = b
+    var lastS = 0
+    var lastT = 1
+
+    while (lastR != 0) {
+        val q = secondLastR / lastR
+
+        val currentR = secondLastR % lastR
+        val currentS = secondLastS - q * lastS
+        val currentT = secondLastT - q * lastT
+
+        secondLastR = lastR
+        secondLastS = lastS
+        secondLastT = lastT
+
+        lastR = currentR
+        lastS = currentS
+        lastT = currentT
+    }
+
+    return Triple(secondLastR, secondLastS, secondLastT)
+}
+
 class DesertMap(private val nodes: Map<String, Node>, private val directions: List<Direction>) {
     operator fun get(nodeID: String) = nodes[nodeID] ?: throw MissingNodeException(nodeID)
 
@@ -41,38 +69,101 @@ class DesertMap(private val nodes: Map<String, Node>, private val directions: Li
 
     fun getSpookyStepsUntil(startNodeRequirement: Predicate<Node>, destinationNodeRequirement: Predicate<Node>): Int {
         val startNodes = nodes.values.filter { startNodeRequirement.test(it) }.toSet()
-        val destinationNodes = nodes.values.filter { destinationNodeRequirement.test(it) }.toSet()
 
-        val startNodeCyclesWithStarts = startNodes.associateWith { getCycleOf(it) }
-        val solutionSet = startNodeCyclesWithStarts.values.fold(emptySet<Node>()) { acc, (sequenceStart, cycle) ->
-            acc + sequenceStart.map { it.second } + cycle.map { it.second }
+        val startNodeSequenceStartsAndCycles = startNodes.map { startNode ->
+            val startAndCycle = getCycleOf(startNode)
+            startAndCycle.first.map { it.second }.toSet() to startAndCycle.second.map { it.second }.toSet()
         }
 
-        if (destinationNodes.any { it !in solutionSet }) throw RestlessSpiritException()
+        val nodeSequenceStarts = startNodeSequenceStartsAndCycles.map { it.first }
+
+        // All sequences should contain at least 1 destination.
+        if (!allSequencesContainDestination(startNodeSequenceStartsAndCycles, destinationNodeRequirement)) throw RestlessSpiritException()
 
         // A solution can either be found right at the start or once every sequence has settled into its respective
         // cycle.
         // First try to find a solution at the beginning:
-        val longestStart = startNodeCyclesWithStarts.values.maxOfOrNull { it.first.size } ?: 0
+        val longestStart = nodeSequenceStarts.maxOfOrNull { it.size } ?: 0
 
-        val sequenceStarts = startNodes.map { getTraversalSequence(it).take(longestStart).toList() }
-        // All sequence starts are of length `longestStart`
-        sequenceStarts.indices.forEach { index ->
-            if (sequenceStarts.all { it[index].second in destinationNodes }) return index
+        var steps: Int
+        with(allReachedDestinationIn(startNodes, longestStart, destinationNodeRequirement)) {
+            if (this != null) return this
+            else steps = longestStart
         }
 
-        TODO(
-            """
-                Rotate the cycles such, that all are starting at cycle-index 0, when the last sequence enters its cycle.
-                Next figure out, at which cycle-indices the node element of `destinationNodes` is.
-                Then determine, if a solution exists, such that all cycles hit one of their respective solution cycle
-                index.
-                And lastly calculate the lowest possible solution. (see: Chinese reminder theorem)
-            """.trimIndent()
-        )
+        // Rotate cycles such that every sequence has entered its cyclic phase.
+        val rotatedCycles = startNodeSequenceStartsAndCycles.map { (sequenceStart, sequenceCycle) ->
+            // All cycles can go through a non-zero number of elements, before entering a cycle.
+            // During that time, both it and the sequence with the longest start are not yet in their cycle.
+            // Therefore, the amount to rotate has to be properly adjusted.
+            val rotateBy = -(longestStart - sequenceStart.size)
+            rotateCycle(sequenceCycle, rotateBy)
+        }
+
+        val cycleModuli = rotatedCycles.map { it.size }
+
+        val solutionIndices = buildList {
+            rotatedCycles.forEach { cycle ->
+                this.add(
+                    buildSet {
+                        cycle.forEachIndexed { index, node ->
+                            if (destinationNodeRequirement.test(node)) this.add(index)
+                        }
+                    }
+                )
+            }
+        }
+
+        // Test-zone:
+        gcdExtended(cycleModuli[0], cycleModuli[1])
+
+        // For testing: consider only fist possible solution-set.
+        TODO()
+    }
+
+    private fun allReachedDestinationIn(
+        startNodes: Set<Node>,
+        steps: Int,
+        destinationNodeRequirement: Predicate<Node>
+    ): Int? {
+        val sequences = startNodes.map { node ->
+            getTraversalSequence(node).take(steps).toSet().map { it.second }
+        }
+
+        sequences[0].indices.forEach { sequenceIndex ->
+            if (sequences.all { destinationNodeRequirement.test(it[sequenceIndex]) }) return sequenceIndex
+        }
+
+        return null
+    }
+
+    private fun allSequencesContainDestination(
+        startNodeSequenceStartsAndCycles: List<Pair<Set<Node>, Set<Node>>>,
+        destinationNodeRequirement: Predicate<Node>
+    ): Boolean =
+        startNodeSequenceStartsAndCycles
+            .map { it.first.union(it.second) }
+            .all { reachedNodes ->
+                reachedNodes.any { destinationNodeRequirement.test(it) }
+            }
+
+    private fun rotateCycle(cycle: Set<Node>, rotateBy: Int): Set<Node> {
+        val normalizedRotateBy = rotateBy % cycle.size
+        val cycleBy = if (normalizedRotateBy < 0) normalizedRotateBy + cycle.size else normalizedRotateBy
+
+        if (cycleBy == 0) return cycle
+
+        val splitIndex = cycle.size - cycleBy
+
+        val parts = cycle.foldIndexed(listOf<Set<Node>>(setOf(), setOf())) { index, acc, node ->
+            if (index >= splitIndex) listOf(acc[0].plus(node), acc[1]) else listOf(acc[0], acc[1].plus(node))
+        }
+
+        return parts[0].plus(parts[1])
     }
 
     private fun getCycleOf(startNode: Node): Pair<Set<Pair<Int, Node>>, Set<Pair<Int, Node>>> {
+        // TODO: This function doesn't get the actual full cycle.
         /*
          * The set of possible pairs in any traversal-sequence is finite,
          * because both the set direction-indices and the set of nodes are.
@@ -131,7 +222,7 @@ fun main() {
     }
 
     fun part2(input: List<String>): Int {
-        TODO()
+        return parseInput(input).getSpookyStepsUntil({ it.id.endsWith("A") }, { it.id.endsWith("Z") })
     }
 
     // test if implementation meets criteria from the description, like:
