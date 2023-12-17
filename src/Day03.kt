@@ -1,17 +1,14 @@
-/**
- * Represents an element in a grid.
- */
-sealed interface GridElement
+sealed interface MachineGridElement: TwoDimGrid.GridElement
 
 /**
  * Represents an empty grid-element.
  */
-data object EmptyGridElement : GridElement
+data object EmptyGridElement : MachineGridElement
 
 /**
  * Represents any grid-element, that is anything but an [EmptyGridElement] or [NumberGridElement].
  */
-open class SymbolGridElement : GridElement
+open class SymbolGridElement : MachineGridElement
 
 /**
  * Represents a gear grid-element.
@@ -25,7 +22,7 @@ data class GearGridElement(val x: Int, val y: Int) : SymbolGridElement()
  */
 data class NumberGridElement(
     val value: Int
-) : GridElement {
+) : MachineGridElement {
     companion object {
         /**
          * Constructs a new [NumberGridElement]. The resulting value is based on what number (in base 10) is represented
@@ -55,7 +52,7 @@ data class HorizontalNumberRegion(
 )
 
 /**
- * Represents a two-dimensional grid of finite size containing [GridElement]s at each point.
+ * Represents a two-dimensional grid of finite size containing [TwoDimGrid.GridElement]s at each point.
  *
  * @constructor Can be constructed from a string representation.
  * This string has to be rectangular (the same number of lines as characters per line).
@@ -63,11 +60,11 @@ data class HorizontalNumberRegion(
  * A peculiarity is that horizontally adjacent digits in the input string will result in every
  * coordinate of these digits containing the [NumberGridElement] represented by them read from left to right.
  */
-class TwoDimGrid(stringRows: List<String>) {
-    private val width: Int
-    private val height: Int
+class MachineGrid(stringRows: List<String>) : TwoDimGrid<MachineGridElement> {
+    override val width: Int
+    override val height: Int
     // The indices of the outer list are the y-index, and the indices of the inner list are the x-indices.
-    private val elements: List<List<GridElement>>
+    override val elements: List<List<MachineGridElement>>
     // Due to the number-regions being horizontal, the y coordinate can be stored as a single int.
     private val numberRegions: List<HorizontalNumberRegion>
     private val gearElements: List<GearGridElement>
@@ -118,13 +115,13 @@ class TwoDimGrid(stringRows: List<String>) {
         gearElements = gearElementsToConstruct.toList()
     }
 
-    operator fun get(indexX: Int, indexY: Int) = elements[indexY][indexX]
+    override operator fun get(coordinates: Pair<Int, Int>) = elements[coordinates.second][coordinates.first]
 
     fun getNumberRegionsNextToSymbol() = numberRegions.filter {
         val xRangeToSearch = (it.xRange.first - 1).coerceIn(0, width - 1)..(it.xRange.last + 1).coerceIn(0, width - 1)
         val yRangeToSearch = (it.y - 1).coerceIn(0, height - 1)..(it.y + 1).coerceIn(0, height - 1)
 
-        return@filter yRangeToSearch.any { y -> xRangeToSearch.any { x -> this[x, y] is SymbolGridElement } }
+        return@filter yRangeToSearch.any { y -> xRangeToSearch.any { x -> this[x to y] is SymbolGridElement } }
     }
 
     fun gearRatios() = gearElements.map { gear ->
@@ -141,11 +138,11 @@ class TwoDimGrid(stringRows: List<String>) {
 
 fun main() {
     fun part1(input: List<String>): Int {
-        return TwoDimGrid(input).getNumberRegionsNextToSymbol().fold(0) { acc, region -> acc + region.localValue }
+        return MachineGrid(input).getNumberRegionsNextToSymbol().fold(0) { acc, region -> acc + region.localValue }
     }
 
     fun part2(input: List<String>): Int {
-        return TwoDimGrid(input).gearRatios().fold(0) { acc, ratio -> acc + ratio }
+        return MachineGrid(input).gearRatios().fold(0) { acc, ratio -> acc + ratio }
     }
 
     // test if implementation meets criteria from the description, like:
