@@ -51,7 +51,7 @@ class PipeGrid : TwoDimGrid<Pipe> {
     override val height: Int
     override val width: Int
     override val elements: List<List<Pipe>>
-    val loop: List<TwoDimGrid.TwoDimensionalIndexedValue<Pipe>>
+    val loop: List<TwoDimensionalIndexedValue<Pipe>>
 
     constructor(lineRepresentation: List<String>) {
         height = lineRepresentation.size
@@ -131,10 +131,10 @@ class PipeGrid : TwoDimGrid<Pipe> {
         }
     }
 
-    private fun initLoop(): List<TwoDimGrid.TwoDimensionalIndexedValue<Pipe>> {
-        val indexedStartPipe = TwoDimGrid.TwoDimensionalIndexedValue(startPipePosition, this[startPipePosition])
+    private fun initLoop(): List<TwoDimensionalIndexedValue<Pipe>> {
+        val indexedStartPipe = TwoDimensionalIndexedValue(startPipePosition, this[startPipePosition])
         val loop = mutableListOf(indexedStartPipe)
-        var currentEdges = listOf<Pair<TwoDimGrid.TwoDimensionalIndexedValue<Pipe>, MapDirection?>>(
+        var currentEdges = listOf<Pair<TwoDimensionalIndexedValue<Pipe>, MapDirection?>>(
             indexedStartPipe to null
         )
 
@@ -151,7 +151,7 @@ class PipeGrid : TwoDimGrid<Pipe> {
     private fun branchOut(
         isAt: Pair<Int, Int>,
         comesFrom: MapDirection?
-    ): List<Pair<TwoDimGrid.TwoDimensionalIndexedValue<Pipe>, MapDirection>> {
+    ): List<Pair<TwoDimensionalIndexedValue<Pipe>, MapDirection>> {
         val pipe = this[isAt]
         val relativePositionsToCheck = pipe.endPoints.filter { it != comesFrom }.map { it.directionVector }
 
@@ -161,7 +161,7 @@ class PipeGrid : TwoDimGrid<Pipe> {
                 val otherPipe = kotlin.runCatching { this@PipeGrid[absolutePosition] }.getOrElse { return@forEach }
                 if (pipe.canConnectTo(otherPipe, relativePosition)) {
                     this.add(
-                        TwoDimGrid.TwoDimensionalIndexedValue(
+                        TwoDimensionalIndexedValue(
                             absolutePosition,
                             otherPipe
                         ) to MapDirection.fromDirectionVector(-relativePosition)
@@ -174,14 +174,14 @@ class PipeGrid : TwoDimGrid<Pipe> {
     override operator fun get(coordinates: Pair<Int, Int>): Pipe = elements[coordinates.second][coordinates.first]
     
     private data class GroundOrVoidRegion(
-        val elements: Set<TwoDimGrid.TwoDimensionalIndexedValue<Pipe>>,
+        val elements: Set<TwoDimensionalIndexedValue<Pipe>>,
         val edgeCoordinates: Set<Pair<Int, Int>>
     ) {
         companion object {
             fun fromElements(elements: List<List<Pipe>>): List<GroundOrVoidRegion> {
                 var remainingElements = elements.flatMapIndexed { yIndex, row ->
                     row.mapIndexed { xIndex, pipe ->
-                        TwoDimGrid.TwoDimensionalIndexedValue(xIndex to yIndex, pipe)
+                        TwoDimensionalIndexedValue(xIndex to yIndex, pipe)
                     }
                 }.filter { it.value == Pipe.GROUND || it.value == Pipe.VOID }.toSet()
 
@@ -199,7 +199,7 @@ class PipeGrid : TwoDimGrid<Pipe> {
                     }
 
                     val regionElements = currentRegionCoordinates.map {
-                        TwoDimGrid.TwoDimensionalIndexedValue(it, elements[it.second][it.first])
+                        TwoDimensionalIndexedValue(it, elements[it.second][it.first])
                     }.toSet()
 
                     remainingElements = remainingElements.filter { it.twoDimIndex !in currentRegionCoordinates }.toSet()

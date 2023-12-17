@@ -8,5 +8,4 @@ interface TwoDimGrid<T: TwoDimGrid.GridElement> {
 
     interface GridElement
 
-    data class TwoDimensionalIndexedValue<out T>(val twoDimIndex: Pair<Int, Int>, val value: T)
 }
